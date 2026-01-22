@@ -8,7 +8,6 @@ import {
   TextInput,
   Modal,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
