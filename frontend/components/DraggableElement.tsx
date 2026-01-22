@@ -70,6 +70,7 @@ const DraggableElement: React.FC<DraggableElementProps> = ({ element }) => {
         { translateX: translateX.value },
         { translateY: translateY.value },
         { scale: scale.value },
+        { rotate: `${element.rotation || 0}deg` },
       ],
     };
   });
