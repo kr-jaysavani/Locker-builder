@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,9 +6,10 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime
+from bson import ObjectId
 
 
 ROOT_DIR = Path(__file__).parent
@@ -27,30 +28,130 @@ api_router = APIRouter(prefix="/api")
 
 
 # Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+class ElementStyle(BaseModel):
+    backgroundColor: Optional[str] = None
+    color: Optional[str] = "#000000"
+    fontSize: Optional[int] = 16
+    fontFamily: Optional[str] = "System"
+    borderRadius: Optional[int] = 0
+    borderWidth: Optional[int] = 0
+    borderColor: Optional[str] = None
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class Element(BaseModel):
+    id: str
+    type: str  # 'image', 'text', 'link', 'friend', 'shape'
+    x: float
+    y: float
+    width: float
+    height: float
+    zIndex: int
+    content: str  # base64 for images, text content for text
+    style: ElementStyle
+    url: Optional[str] = None  # for link buttons
+    rotation: Optional[float] = 0
 
-# Add your routes to the router instead of directly to app
+class Page(BaseModel):
+    title: str
+    elements: List[Element]
+    backgroundColor: str = "#FFFFFF"
+    canvasWidth: float = 375
+    canvasHeight: float = 667
+
+class PageResponse(BaseModel):
+    id: str
+    title: str
+    elements: List[Element]
+    backgroundColor: str
+    canvasWidth: float
+    canvasHeight: float
+    createdAt: datetime
+    updatedAt: datetime
+
+class PageUpdate(BaseModel):
+    title: Optional[str] = None
+    elements: Optional[List[Element]] = None
+    backgroundColor: Optional[str] = None
+    canvasWidth: Optional[float] = None
+    canvasHeight: Optional[float] = None
+
+
+# Helper function to serialize MongoDB documents
+def serialize_page(page: dict) -> dict:
+    page["id"] = str(page["_id"])
+    del page["_id"]
+    return page
+
+
+# Add your routes to the router
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Canvas Page Builder API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+@api_router.post("/pages", response_model=PageResponse)
+async def create_page(page: Page):
+    """Create a new page"""
+    page_dict = page.dict()
+    page_dict["createdAt"] = datetime.utcnow()
+    page_dict["updatedAt"] = datetime.utcnow()
+    
+    result = await db.pages.insert_one(page_dict)
+    created_page = await db.pages.find_one({"_id": result.inserted_id})
+    
+    return serialize_page(created_page)
+
+
+@api_router.get("/pages", response_model=List[PageResponse])
+async def get_pages():
+    """Get all pages"""
+    pages = await db.pages.find().sort("updatedAt", -1).to_list(100)
+    return [serialize_page(page) for page in pages]
+
+
+@api_router.get("/pages/{page_id}", response_model=PageResponse)
+async def get_page(page_id: str):
+    """Get a specific page by ID"""
+    try:
+        page = await db.pages.find_one({"_id": ObjectId(page_id)})
+        if not page:
+            raise HTTPException(status_code=404, detail="Page not found")
+        return serialize_page(page)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.put("/pages/{page_id}", response_model=PageResponse)
+async def update_page(page_id: str, page_update: PageUpdate):
+    """Update a page"""
+    try:
+        update_data = {k: v for k, v in page_update.dict().items() if v is not None}
+        update_data["updatedAt"] = datetime.utcnow()
+        
+        result = await db.pages.update_one(
+            {"_id": ObjectId(page_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Page not found")
+        
+        updated_page = await db.pages.find_one({"_id": ObjectId(page_id)})
+        return serialize_page(updated_page)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.delete("/pages/{page_id}")
+async def delete_page(page_id: str):
+    """Delete a page"""
+    try:
+        result = await db.pages.delete_one({"_id": ObjectId(page_id)})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Page not found")
+        return {"message": "Page deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 # Include the router in the main app
 app.include_router(api_router)
