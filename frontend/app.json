@@ -1,22 +1,37 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Canvas Page Builder",
+    "slug": "canvas-page-builder",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canvasbuilder.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Add photos to your canvas",
+        "NSCameraUsageDescription": "Take photos for your canvas"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.canvasbuilder.app",
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -26,17 +41,23 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-image-picker",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "photosPermission": "Add photos to your canvas",
+          "cameraPermission": "Take photos for your canvas"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "your-project-id"
+      }
     }
   }
 }
