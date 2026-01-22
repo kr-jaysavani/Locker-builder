@@ -84,14 +84,7 @@ const DraggableElement: React.FC<DraggableElementProps> = ({ element }) => {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Element', 'Are you sure you want to delete this element?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => deleteElement(element.id),
-      },
-    ]);
+    deleteElement(element.id);
   };
 
   const handleEdit = () => {
