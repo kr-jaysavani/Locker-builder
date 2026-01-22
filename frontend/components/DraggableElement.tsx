@@ -219,6 +219,12 @@ const DraggableElement: React.FC<DraggableElementProps> = ({ element }) => {
                 <TouchableOpacity style={styles.controlButton} onPress={handleEdit}>
                   <Ionicons name="create" size={16} color="#FFF" />
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.controlButton} onPress={() => handleRotate(-15)}>
+                  <Ionicons name="refresh-outline" size={16} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.controlButton} onPress={() => handleRotate(15)}>
+                  <Ionicons name="refresh" size={16} color="#FFF" />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.controlButton} onPress={() => bringToFront(element.id)}>
                   <Ionicons name="arrow-up" size={16} color="#FFF" />
                 </TouchableOpacity>
