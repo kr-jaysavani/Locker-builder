@@ -79,6 +79,11 @@ const DraggableElement: React.FC<DraggableElementProps> = ({ element }) => {
     updateElement(element.id, { [direction]: newValue });
   };
 
+  const handleRotate = (delta: number) => {
+    const newRotation = ((element.rotation || 0) + delta) % 360;
+    updateElement(element.id, { rotation: newRotation });
+  };
+
   const handleSelect = () => {
     selectElement(element.id);
   };
